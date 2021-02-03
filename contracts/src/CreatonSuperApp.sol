@@ -108,23 +108,23 @@ contract CreatonSuperApp is Proxied, ISuperApp {
     function collateral(address membership, bytes calldata ctx) external {
         // msg sender is encoded in the Context
         console.log("col");
-        address sender = _host.decodeCtx(ctx).msgSender;
+        //address sender = _host.decodeCtx(ctx).msgSender;
 
-        uint256 collateralFee = membershipPrice[membership];
-        _acceptedToken.transferFrom(sender, membership, collateralFee);
-        streamers[sender] = membership;
+        //uint256 collateralFee = membershipPrice[membership];
+        //_acceptedToken.transferFrom(sender, membership, collateralFee);
+        //ASDFGHJKL;'\streamers[sender] = membership;
     }
 
     /// @dev Check requirements before letting the streamer become a supporter
     function _beforeSupport(bytes calldata ctx) private view returns (bytes memory cbdata) {
         console.log("bs");
         address sender = _host.decodeCtx(ctx).msgSender;
-        address collateralMembership = streamers[sender]; //membership the streamer has payed collateral for
+        //address collateralMembership = streamers[sender]; //membership the streamer has payed collateral for
         //require(streamers[sender] > 0, _ERR_STR_NO_STREAMER);
 
         //check if streamer is going to support the membership they payed collateral for
-        require(collateralMembership == collateralMembership, _ERR_STR_UNFINISHED_SUPPORT); //TODO: actually check it
-        cbdata = abi.encode(sender, collateralMembership);
+        //require(collateralMembership == collateralMembership, _ERR_STR_UNFINISHED_SUPPORT); //TODO: actually check it
+        cbdata = abi.encode(sender, sender);
     }
 
     /// @dev Support the creator
@@ -142,12 +142,12 @@ contract CreatonSuperApp is Proxied, ISuperApp {
         (, int96 flowRate, , ) = IConstantFlowAgreementV1(agreementClass).getFlowByID(_acceptedToken, agreementId);
         //int96 subscriptionPrice = membershipPrice[streamer];
         //require(flowRate >= int96(uint256(5e18) / uint256(3600 * 24 * 30)), _ERR_STR_LOW_FLOW_RATE); //TODO: make dynamic subscriptionPrice + e18
-        require(flowRate >= _MINIMUM_FLOW_RATE, _ERR_STR_LOW_FLOW_RATE);
+        //require(flowRate >= _MINIMUM_FLOW_RATE, _ERR_STR_LOW_FLOW_RATE);
         console.log("afterrequire");
-        delete streamers[streamer];
+        //delete streamers[streamer];
         //make streamer a supporter
-        _supportersSet.add(streamer);
-        subscribers.push(streamer);
+        //_supportersSet.add(streamer);
+        //subscribers.push(streamer);
         console.log("afterstreamer");
         newCtx = ctx;
     }

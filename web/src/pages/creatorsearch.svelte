@@ -68,35 +68,36 @@
     usdcBalance = formatEther(await usdc.balanceOf($wallet.address));
     usdcxBalance = formatEther(await usdcx.balanceOf($wallet.address));
 
+    /*
     var call;
     if (usdcxBalance < 2)
       call = [
         [
           101, // upgrade 100 usdcx to play the game
           usdcx.address,
-          sf.interfaceCoder.encode(['uint256'], [parseEther('100')]),
+          sf.web3.eth.abi.encodeParameters(['uint256'], [sf.web3.utils.toWei('100', 'ether').toString()]),
         ],
         [
           1, // approve collateral fee
           usdcx.address,
-          sf.interfaceCoder.encode(['address', 'uint256'], [contractAddress, parseEther('10')]),
+          sf.web3.eth.abi.encodeParameters(
+            ['address', 'uint256'],
+            [APP_ADDRESS, sf.web3.utils.toWei('10', 'ether').toString()]
+          ),
         ],
         [
           202, // callAppAction to collateral
           contractAddress,
-          sf.interfaceCollateral.encodeFunctionData('collateral', [contractAddress, '0x']), //TODO: have to
+          app.contract.methods.collateral([contractAddress, '0x']).encodeABI(),
         ],
         [
           201, // create constant flow (10/mo)
           sf.agreements.cfa.address,
-          sf.interfaceCreateFlow.encodeFunctionData('createFlow', [
-            usdcx.address,
-            contractAddress,
-            MINIMUM_GAME_FLOW_RATE.toString(),
-            '0x',
-          ]),
-          'test,',
-          '0x',
+          sf.interfaceCreateFlow.encodeFunctionData(
+            'createFlow',
+            [usdcx.address, contractAddress, MINIMUM_GAME_FLOW_RATE.toString(), '0x'],
+            ['0x']
+          ),
         ],
       ];
     else
@@ -114,15 +115,75 @@
         [
           201, // create constant flow (10/mo)
           sf.agreements.cfa.address,
-          sf.interfaceCreateFlow.encodeFunctionData('createFlow', [
-            usdcx.address,
-            contractAddress,
-            MINIMUM_GAME_FLOW_RATE.toString(),
-            '0x',
-          ]),
+          sf.interfaceCoder.encode(
+            ['bytes', 'bytes'],
+            [
+              sf.interfaceCreateFlow.encodeFunctionData('createFlow()', [
+                usdcx.address,
+                contractAddress,
+                MINIMUM_GAME_FLOW_RATE.toString(),
+                '0x',
+              ]),
+              '0x',
+            ]
+          ),
         ],
       ];
-
+*/
+    var call;
+    if (usdcxBalance < 2)
+      call = [
+        [
+          101, // upgrade 100 usdcx to play the game
+          usdcx.address,
+          sf.interfaceCoder.encode(['uint256'], [parseEther('100')]),
+        ],
+        [
+          1, // approve collateral fee
+          usdcx.address,
+          sf.interfaceCoder.encode(['address', 'uint256'], [contractAddress, parseEther('10')]),
+        ],
+        [
+          201, // create constant flow (10/mo)
+          sf.agreements.cfa.address,
+          sf.interfaceCoder.encode(
+            ['bytes', 'bytes'],
+            [
+              sf.interfaceCreateFlow.encodeFunctionData('createFlow', [
+                usdcx.address,
+                contractAddress,
+                MINIMUM_GAME_FLOW_RATE.toString(),
+                '0x',
+              ]),
+              '0x',
+            ]
+          ),
+        ],
+      ];
+    else
+      call = [
+        [
+          1, // approve collateral fee
+          usdcx.address,
+          sf.interfaceCoder.encode(['address', 'uint256'], [contractAddress, parseEther('10')]),
+        ],
+        [
+          201, // create constant flow (10/mo)
+          sf.agreements.cfa.address,
+          sf.interfaceCoder.encode(
+            ['bytes', 'bytes'],
+            [
+              sf.interfaceCreateFlow.encodeFunctionData('createFlow', [
+                usdcx.address,
+                contractAddress,
+                MINIMUM_GAME_FLOW_RATE.toString(),
+                '0x',
+              ]),
+              '0x',
+            ]
+          ),
+        ],
+      ];
     console.log('this is the batchcall: ', call);
     await sf.host.batchCall(call, {from: $wallet.address});
   }
