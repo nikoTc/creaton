@@ -91,11 +91,7 @@ contract CreatonSuperApp is Proxied, ISuperApp {
         _cfa = cfa;
         _acceptedToken = acceptedToken;
 
-        uint256 configWord =
-            SuperAppDefinitions.APP_LEVEL_FINAL |
-                SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
-                SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
-                SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP;
+        uint256 configWord = SuperAppDefinitions.APP_LEVEL_FINAL;
 
         _host.registerApp(configWord);
     }
