@@ -91,10 +91,6 @@ const config = {
   paths: {
     sources: 'src',
   },
-  tenderly: {
-    project: 'creaton',
-    username: 'aeroxander',
-  },
 };
 
 module.exports = config;

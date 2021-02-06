@@ -163,11 +163,6 @@
     else
       call = [
         [
-          1, // approve collateral fee
-          usdcx.address,
-          sf.interfaceCoder.encode(['address', 'uint256'], [contractAddress, parseEther('10')]),
-        ],
-        [
           201, // create constant flow (10/mo)
           sf.agreements.cfa.address,
           sf.interfaceCoder.encode(
