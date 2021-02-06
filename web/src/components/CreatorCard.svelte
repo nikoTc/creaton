@@ -4,10 +4,24 @@
     title: string;
     creatorContract: string;
     subscriptionPrice: number;
-    avatarURL: string;
+    metadataURL: string;
   };
 
+  var metadata;
+  var creatorInfo = {
+    name: {description: ''},
+    image: {description: ''},
+  };
+
+  onMount(async () => {
+    const response = await fetch(creator.metadataURL);
+    metadata = await response.json();
+    creatorInfo = metadata.properties;
+    console.log(creatorInfo);
+  });
+
   import Link from '../_routing/curi/Link.svelte';
+  import {onMount} from 'svelte';
 </script>
 
 <style>
@@ -23,8 +37,8 @@
   params={{id: creator.creatorContract}}
   name="Creator"
   class="block px-4 py-8 border rounded overflow-hidden">
-  <h3 class="text-4xl leading-normal font-medium text-gray-900 truncate">{creator.title}</h3>
-  <img class="avatar" src={creator.avatarURL} alt={creator.title} />
+  <h3 class="text-4xl leading-normal font-medium text-gray-900 truncate">{creatorInfo.name.description}</h3>
+  <img class="avatar" src={creatorInfo.image.description} alt={creatorInfo.name.description} />
   <h3 class="text-1xl mt-3 leading-normal font-medium text-gray-900 truncate">
     Monthly fee: ${creator.subscriptionPrice}
   </h3>

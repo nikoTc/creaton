@@ -1,6 +1,6 @@
 <script lang="ts">
   import WalletAccess from '../templates/WalletAccess.svelte';
-  import Web3 from "web3-utils";
+  import Web3 from 'web3-utils';
   import Button from '../components/Button.svelte';
   import Input from '../components/Input.svelte';
   import {Contract} from '@ethersproject/contracts';
@@ -30,11 +30,10 @@
   let usdc;
   let usdcx;
   let app;
-  let usdcBalance=0;
-  let usdcApproved=0;
+  let usdcBalance = 0;
+  let usdcApproved = 0;
 
-
-  let subscriberPubKeySig,subscriberPubKeyEnv;
+  let subscriberPubKeySig, subscriberPubKeyEnv;
   let contents = [];
 
   const APP_ADDRESS = '0x46113fF0F86A2c27151F43e7959Ff60DebC18dB1';
@@ -184,7 +183,6 @@
     } else {
       subscriptionStatus = 'UNSUBSCRIBED';
     }
-    
   }
 
   async function handleSubscribe() {
@@ -202,11 +200,11 @@
 
   async function deployTextile() {
     const setup = await textile.authenticate();
-    alert("you're good");
+    console.log('Textile Authenticated');
   }
 
   async function download(path) {
-    console.log("download clicked");
+    console.log('download clicked');
     await textile.getTmapFromCreator(contractAddress);
     const decrypted = await textile.decryptFile(path, contractAddress, subscriberAddress, nuPassword);
     await downloadBlob(decrypted);
@@ -233,28 +231,28 @@
 
   function support2() {
     subscriptionStatus = 'SUBSCRIBED';
-    loadKeyPairs()
+    loadKeyPairs();
   }
 
-  async function loadKeyPairs(){
-    let password = prompt("Please enter your password:", "password");
+  async function loadKeyPairs() {
+    let password = prompt('Please enter your password:', 'password');
     let accounts = await wallet.provider.listAccounts();
     let address = accounts[0];
-    let data={password, address}
-    let url = new URL("http://127.0.0.1:5000/loadKeyPair");
-    Object.keys(data).forEach(key => url.searchParams.append(key, data[key]))
+    let data = {password, address};
+    let url = new URL('http://127.0.0.1:5000/loadKeyPair');
+    Object.keys(data).forEach((key) => url.searchParams.append(key, data[key]));
 
     fetch(url.toString())
-    .then(function(response) {
+      .then(function (response) {
         if (response.status >= 400) {
-            throw new Error("Bad response from server");
+          throw new Error('Bad response from server');
         }
         return response.json();
-    })
-    .then(function(pairs) {
-        subscriberPubKeySig=pairs.pubkey_sig;
-        subscriberPubKeyEnv=pairs.pubkey_enc;
-    });
+      })
+      .then(function (pairs) {
+        subscriberPubKeySig = pairs.pubkey_sig;
+        subscriberPubKeyEnv = pairs.pubkey_enc;
+      });
   }
 
   function copyToClipboard(val) {
@@ -278,59 +276,58 @@
   }
 </script>
 
-
 <WalletAccess />
-  <section class="py-8 px-4 text-center max-w-4xl mx-auto">
-    {#if !creator || !title || !avatarURL || !subscriptionPrice}
-      <div>Fetching creator...</div>
+<section class="py-8 px-4 text-center max-w-4xl mx-auto">
+  {#if !creator || !title || !avatarURL || !subscriptionPrice}
+    <div>Fetching creator...</div>
+  {:else}
+    <h3 class="text-4xl leading-normal font-medium text-gray-900 dark:text-gray-500 truncate">{title}</h3>
+    <p class="mb-2 text-base leading-6 text-gray-500 dark:text-gray-300 text-center">{creator}</p>
+    <img class="w-full" src={avatarURL} alt={title} />
+    {#if subscriptionStatus === 'UNSUBSCRIBED'}
+      <Button class="mt-3" on:click={support2}>Subscribe - ${subscriptionPrice}</Button>
+    {:else if subscriptionStatus === 'PENDING'}
+      <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Subscription pending...</p>
     {:else}
-      <h3 class="text-4xl leading-normal font-medium text-gray-900 dark:text-gray-500 truncate">{title}</h3>
-      <p class="mb-2 text-base leading-6 text-gray-500 dark:text-gray-300 text-center">{creator}</p>
-      <img class="w-full" src={avatarURL} alt={title} />
-      {#if subscriptionStatus === 'UNSUBSCRIBED'}
-        <Button class="mt-3" on:click={support2}>Subscribe - ${subscriptionPrice}</Button>
-      {:else if subscriptionStatus === 'PENDING'}
-        <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Subscription pending...</p>
-      {:else}
-        <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Subscription balance: ${currentBalance}</p>
-        <label for="description">NuCypher Password: </label>
-        <Input type="text" placeholder="Password" className="field" bind:value={nuPassword} />
-        <br />
-        <div class="py-4 dark:bg-black bg-white">
-          <div class="mx-auto px-4 sm:px-6 lg:max-w-screen-xl lg:px-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-              {#each contents as content, index}
-                <h3 class="text-1xl leading-normal font-medium text-gray-900 dark:text-gray-500">{index + 1}</h3>
-                <h3 class="text-1xl leading-normal font-medium text-gray-900 dark:text-gray-500">{content.name}</h3>
-                <h3
-                  title={encodeURI(content.description)}
-                  class="text-1xl mt-3 leading-normal font-medium text-gray-900 dark:text-gray-500 truncate">
-                  Description:
-                  {content.description}
-                </h3>
-                <h3
-                  title={encodeURI(content.ipfs)}
-                  class="mt-2 text-base leading-6 text-gray-500 dark:text-gray-300 truncate">
-                  <Button class="mt-3" on:click={() => copyToClipboard(content.ipfs)}>Get</Button>
-                  {content.ipfs}
-                </h3>
-                <Button class="mt-3" on:click={() => download(content.ipfs)}>Download</Button>
-              {/each}
-            </div>
+      <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Subscription balance: ${currentBalance}</p>
+      <label for="description">NuCypher Password: </label>
+      <Input type="text" placeholder="Password" className="field" bind:value={nuPassword} />
+      <br />
+      <div class="py-4 dark:bg-black bg-white">
+        <div class="mx-auto px-4 sm:px-6 lg:max-w-screen-xl lg:px-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+            {#each contents as content, index}
+              <h3 class="text-1xl leading-normal font-medium text-gray-900 dark:text-gray-500">{index + 1}</h3>
+              <h3 class="text-1xl leading-normal font-medium text-gray-900 dark:text-gray-500">{content.name}</h3>
+              <h3
+                title={encodeURI(content.description)}
+                class="text-1xl mt-3 leading-normal font-medium text-gray-900 dark:text-gray-500 truncate">
+                Description:
+                {content.description}
+              </h3>
+              <h3
+                title={encodeURI(content.ipfs)}
+                class="mt-2 text-base leading-6 text-gray-500 dark:text-gray-300 truncate">
+                <Button class="mt-3" on:click={() => copyToClipboard(content.ipfs)}>Get</Button>
+                {content.ipfs}
+              </h3>
+              <Button class="mt-3" on:click={() => download(content.ipfs)}>Download</Button>
+            {/each}
           </div>
         </div>
-      {/if}
-      {#if subscriberPubKeySig !== null}
-        <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Please relay your public keys to Creator:</p>
-        <ul>
-          <li>{subscriberPubKeySig}</li>
-          <li>{subscriberPubKeyEnv}</li>
-        </ul>
-      {/if}
-      <br />
-      <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">usdc balance: ${usdcBalance}</p>
-      <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">approved usdc balance: ${usdcApproved}</p>
-      <Button class="mt-3" on:click={mintUSDC}>mint 100 usdc</Button>
-      <Button class="mt-3" on:click={approveUSDC}>approve a lot of usdc</Button>
+      </div>
     {/if}
-  </section>
+    {#if subscriberPubKeySig !== null}
+      <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">Please relay your public keys to Creator:</p>
+      <ul>
+        <li>{subscriberPubKeySig}</li>
+        <li>{subscriberPubKeyEnv}</li>
+      </ul>
+    {/if}
+    <br />
+    <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">usdc balance: ${usdcBalance}</p>
+    <p class="mt-4 text-2xl leading-6 dark:text-gray-300 text-center">approved usdc balance: ${usdcApproved}</p>
+    <Button class="mt-3" on:click={mintUSDC}>mint 100 usdc</Button>
+    <Button class="mt-3" on:click={approveUSDC}>approve a lot of usdc</Button>
+  {/if}
+</section>
