@@ -24,21 +24,13 @@
   import {onMount} from 'svelte';
 </script>
 
-<style>
-  .avatar {
-    height: 300px;
-    object-fit: cover;
-    width: 100%;
-  }
-</style>
-
 <Link
   id={creator.creatorContract}
   params={{id: creator.creatorContract}}
   name="Creator"
   class="block px-4 py-8 border rounded overflow-hidden">
   <h3 class="text-4xl leading-normal font-medium text-gray-900 truncate">{creatorInfo.name.description}</h3>
-  <img class="avatar" src={creatorInfo.image.description} alt={creatorInfo.name.description} />
+  <img class="object-contain h-80 w-full" src={creatorInfo.image.description} alt={creatorInfo.name.description} />
   <h3 class="text-1xl mt-3 leading-normal font-medium text-gray-900 truncate">
     Monthly fee: ${creator.subscriptionPrice}
   </h3>
