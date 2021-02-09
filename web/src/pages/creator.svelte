@@ -202,7 +202,7 @@
 
   async function deployTextile() {
     const setup = await textile.authenticate();
-    alert("you're good");
+    // alert("you're good");
   }
 
   async function download(path) {
