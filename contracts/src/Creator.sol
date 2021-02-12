@@ -33,32 +33,25 @@ contract Creator is SuperAppBase {
     // -----------------------------------------
     // Storage
     // -----------------------------------------
-    
+
     enum Status { unSubscribed, pendingSubscribe, pendingUnsubscribe, subscribed }
     enum Approval { neutral, like, dislike }
-    
+
     struct Subscriber {
         string sigKey;
         string pubKey;
         string textileKey;
         Status status;
     }
-    
+
     struct Post {
         string metadataURL;
         uint totalLikes;
         uint totalDislikes;
-        uint totalComments;
-        Comment[] comments;
-        address[] likes;
-        mapping (address => bool) disLikes;
+        address[] votees;
     }
-    
-    struct Comment {
-        address owner;
-        string ipfsLink;
-        uint created;
-    }
+
+    address[] emptyVoteArrray;
 
     ISuperfluid private _host; // host
     IConstantFlowAgreementV1 private _cfa; // the stored constant flow agreement class address
@@ -74,11 +67,10 @@ contract Creator is SuperAppBase {
     int96 private _MINIMUM_FLOW_RATE = subscriptionPrice.mul(1e18).div(3600 * 24 * 30);
     mapping (address => Subscriber) public subscribers;
     address[] public subscribersList;
-    mapping (uint => Post) public posts;
+    Post[] public posts;
     uint postCounter = 0;
-    Comment[] emptyCommentArrray;
     bool streaming; // shows if streams are open to creator and treasury
-    
+
     // -----------------------------------------
     // Constructor
     // -----------------------------------------
@@ -87,7 +79,7 @@ contract Creator is SuperAppBase {
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
         ISuperToken acceptedToken
-    ) public {
+    ) {
 
         CreatonAdmin = msg.sender;
 
@@ -118,69 +110,71 @@ contract Creator is SuperAppBase {
         treasury_fee = _treasury_fee;
         streaming = false;
     }
-    
+
     // -----------------------------------------
     // Logic
     // -----------------------------------------
 
     receive() external payable {}
-    
+
     function withdrawEth() public {
         (bool success, ) = msg.sender.call{value: (address(this).balance)}("Not admin");
         require(success, "No balance");
     }
-    
+
     // function recoverTokens(address _token) external isCreator {
     //     ERC20(_token).approve(address(this), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     //     ERC20(_token).transfer(msg.sender, ERC20(_token).balanceOf(address(this)));
     // }
-    
+
     function acceptSubscribe(address _address) external  {
        require(subscribers[_address].status == Status.pendingSubscribe, "Not pending subscribe");
        subscribers[_address].status = Status.subscribed;
     }
-    
+
     function acceptUnsubscribe(address _address) external  {
        require(subscribers[_address].status == Status.pendingUnsubscribe, "Not pending unsubscribe");
        delete subscribers[_address];
     }
-    
+
     function bulkAcceptSubscribe(address[] memory _addresses) external  {
         for(uint i = 0; i < _addresses.length; i++) {
             subscribers[_addresses[i]].status = Status.subscribed;
         }
     }
-    
+
     function bulkAcceptUnsubscribe(address[] memory _addresses) external  {
         for(uint i = 0; i < _addresses.length; i++) {
             delete subscribers[_addresses[i]];
         }
     }
-    
-    function upload(string memory _metadataURL) external  {
-       Post storage post = posts[postCounter];
-       post.metadataURL = _metadataURL;
-       post.comments = emptyCommentArrray;
-       postCounter++;
+
+    function upload(string memory _metadataURL) external {
+       posts.push(Post(_metadataURL, 0, 0, emptyVoteArrray));
     }
-    
+
+    function hasLiked(address _address, uint _index) public view returns(bool) {
+        for(uint i = 0; i < posts[_index].votees.length; i++) {
+            if(posts[_index].votees[i] == _address) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function like(address _address, uint _index, uint approvalEnum) external {
         require(subscribers[_address].status == Status.subscribed, "Not subscribed");
-        require(posts[_index].likes[_address] == Approval.neutral, "Already rated");
         require(approvalEnum == 1 || approvalEnum == 2, "Invalid approval enum");
-        
+        require(hasLiked(_address, _index) == false, 'Already liked');
+
         if(approvalEnum == 1) {
             posts[_index].totalLikes++;
-            posts[_index].likes[_address] = Approval.like;
+            posts[_index].votees.push(_address);
         } else {
-            posts[_index].likes[_address] = Approval.dislike;
             posts[_index].totalDislikes++;
+            posts[_index].votees.push(_address);
+
         }
-    }
-    
-    function comment(address _address, uint _index, string memory _ipfsLink) external {
-        posts[_index].comments.push(Comment(_address, _ipfsLink, block.timestamp));
-        posts[_index].totalComments++;
     }
 
     // -----------------------------------------
@@ -188,7 +182,7 @@ contract Creator is SuperAppBase {
     // -----------------------------------------
 
     function percentage (
-        int96 num, 
+        int96 num,
         int96 percent
     ) public pure returns (int96) {
         return num.mul(percent).div(100);
@@ -198,11 +192,11 @@ contract Creator is SuperAppBase {
     // Superfluid Logic
     // -----------------------------------------
 
-    function _addSubscriber(address _address, string memory _sigKey, string memory _pubKey) private {
+    function _addSubscriber(address _address, string memory _sigKey, string memory _pubKey, string memory _textileKey) private {
         subscribersList.push(_address);
-        subscribers[_address] = Subscriber(_sigKey, _pubKey, Status.pendingSubscribe);
+        subscribers[_address] = Subscriber(_sigKey, _pubKey, _textileKey, Status.pendingSubscribe);
     }
-    
+
     function _delSubscriber(address _address) private {
         if(subscribers[_address].status == Status.subscribed){
             subscribers[_address].status = Status.pendingUnsubscribe;
@@ -224,8 +218,8 @@ contract Creator is SuperAppBase {
 
         ISuperfluid.Context memory context = _host.decodeCtx(ctx); // should give userData
         address sender = context.msgSender; // subscriber
-        (string memory sigKey, string memory pubKey, string memory) = abi.decode(context.userData, (string, string)); // this is reallyy tricky
-        _addSubscriber(sender, sigKey, pubKey);
+        (string memory sigKey, string memory pubKey, string memory textileKey) = abi.decode(context.userData, (string, string, string)); // this is reallyy tricky
+        _addSubscriber(sender, sigKey, pubKey, textileKey);
 
         return _updateCreatorFlows(ctx);
     }
@@ -273,8 +267,8 @@ contract Creator is SuperAppBase {
                         contract2creator,
                         new bytes(0)
                     ),
-                    new bytes(0), 
-                    ctx 
+                    new bytes(0),
+                    ctx
                 );
 
                 // update flow to treasury
@@ -302,8 +296,8 @@ contract Creator is SuperAppBase {
                         creator,
                         new bytes(0)
                     ),
-                    new bytes(0), 
-                    ctx 
+                    new bytes(0),
+                    ctx
                 );
 
                 // delete flow to treasury
@@ -334,10 +328,10 @@ contract Creator is SuperAppBase {
                     contract2creator,
                     new bytes(0)
                 ),
-                new bytes(0), 
-                ctx 
+                new bytes(0),
+                ctx
             );
-            
+
             // open flow to treasury
             (newCtx, ) = _host.callAgreementWithContext(
                 _cfa,
@@ -348,12 +342,12 @@ contract Creator is SuperAppBase {
                     contract2treasury,
                     new bytes(0)
                 ),
-                new bytes(0), 
-                newCtx 
+                new bytes(0),
+                newCtx
             );
 
             streaming = true;
-        }   
+        }
     }
 
     // -----------------------------------------
@@ -477,7 +471,7 @@ contract Creator is SuperAppBase {
         require(_isCFAv1(agreementClass), "LotterySuperApp: only CFAv1 supported");
         _;
     }
-    
+
     modifier isCreator() {
         require(msg.sender == creator, "Not owner");
         _;
