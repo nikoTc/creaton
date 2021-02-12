@@ -40,6 +40,7 @@ contract Creator is SuperAppBase {
     struct Subscriber {
         string sigKey;
         string pubKey;
+        string textileKey;
         Status status;
     }
     
@@ -49,7 +50,8 @@ contract Creator is SuperAppBase {
         uint totalDislikes;
         uint totalComments;
         Comment[] comments;
-        mapping (address => Approval) likes;
+        address[] likes;
+        mapping (address => bool) disLikes;
     }
     
     struct Comment {
@@ -71,6 +73,7 @@ contract Creator is SuperAppBase {
     int96 public subscriptionPrice;
     int96 private _MINIMUM_FLOW_RATE = subscriptionPrice.mul(1e18).div(3600 * 24 * 30);
     mapping (address => Subscriber) public subscribers;
+    address[] public subscribersList;
     mapping (uint => Post) public posts;
     uint postCounter = 0;
     Comment[] emptyCommentArrray;
@@ -196,6 +199,7 @@ contract Creator is SuperAppBase {
     // -----------------------------------------
 
     function _addSubscriber(address _address, string memory _sigKey, string memory _pubKey) private {
+        subscribersList.push(_address);
         subscribers[_address] = Subscriber(_sigKey, _pubKey, Status.pendingSubscribe);
     }
     
