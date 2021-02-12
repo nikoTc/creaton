@@ -153,6 +153,14 @@ contract Creator is SuperAppBase {
        posts.push(Post(_metadataURL, 0, 0, emptyVoteArrray));
     }
 
+    function getPostCount() public view returns (uint) {
+        return posts.length;
+    }
+
+    function getSubscriberCount() public view returns (uint) {
+        return subscribersList.length;
+    }
+
     function hasLiked(address _address, uint _index) public view returns(bool) {
         for(uint i = 0; i < posts[_index].votees.length; i++) {
             if(posts[_index].votees[i] == _address) {
