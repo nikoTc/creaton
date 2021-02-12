@@ -66,8 +66,9 @@
   let ethereum;
   let web3;
 
-  const APP_ADDRESS = '0x46113fF0F86A2c27151F43e7959Ff60DebC18dB1';
-  const MINIMUM_GAME_FLOW_RATE = '3858024691358';
+  // Creator
+  let pendingSubscribers = [];
+  let MINIMUM_GAME_FLOW_RATE;
 
   if (typeof window !== 'undefined') {
     contractAddress = window.location.pathname.split('/')[2];
@@ -88,6 +89,7 @@
     }
     if (userRole == 'SUBSCRIBER'){
       loadSuperFluid();
+      loadKeyPairs();
     }
     let socket = window['socket'];
     socket.on('connect', function () {
@@ -133,25 +135,27 @@
 
   async function loadCreatorData() {
     creatorContract = await new Contract(contractAddress, creatorABI, signer);
-    await getContent();
+    // await getContent();
     creatorAddress = await creatorContract.creator();
     contractDescription = await creatorContract.description();
     subscriptionPrice = await creatorContract.subscriptionPrice();
+    MINIMUM_GAME_FLOW_RATE = parseUnits(subscriptionPrice.toString(), 18).div(3600 * 24 * 30);
 
     if (userAddress == creatorAddress){
       userRole = 'CREATOR';
+      getPendingSubscribers();
     } else {
       userRole = 'SUBSCRIBER';
+      subscriberAddress = userAddress;
+      const subscriberStatus = await creatorContract.subscribers(userAddress) //0xaeAedC36bE97fbeabA6E55Ef9e18bebad963335a
 
-      const subscriberStatus = await creatorContract.subscribers(await signer.getAddress()) //0xaeAedC36bE97fbeabA6E55Ef9e18bebad963335a
-
-      if(subscriberStatus[2] === 0) {
+      if(subscriberStatus[3] === 0) {
         subscriptionStatus = 'UNSUBSCRIBED';
-      } else if (subscriberStatus[2] === 1) {
+      } else if (subscriberStatus[3] === 1) {
         subscriptionStatus = 'PENDING_SUBSCRIPTION';
-      } else if (subscriberStatus[2] === 2) {
+      } else if (subscriberStatus[3] === 2) {
         subscriptionStatus = 'UNSUBSCRIBED';
-      } else if (subscriberStatus[2] === 3) {
+      } else if (subscriberStatus[3] === 3) {
         subscriptionStatus = 'SUBSCRIBED';
       }
     }
@@ -166,6 +170,7 @@
     // });
   }
 
+  
   async function getContent() {
     let contentsString = await creatorContract.getAllMetadata();
     contents = [];
@@ -380,30 +385,37 @@
     }
 
     async function getPendingSubscribers(){
-
+      let tmp = await creatorContract.subscribersList();
+      for (let i = 0; i < tmp.length; i++) {
+        let subscriber = await creatorContract.subscribers(tmp[i]);
+        if(subscriber[3] === 1){
+          pendingSubscribers.push(tmp[i]);
+        }
+      }
     }
 
-    async function grant() {
-    let pubkeys_sig = JSON.stringify([sigKey]);
-    let pubkeys_enc = JSON.stringify([pubKey]);
-    const data = {
-      subscriber_pubkeys_sig: pubkeys_sig,
-      subscriber_pubkeys_enc: pubkeys_enc,
-      label: contractAddress,
-      address: creatorAddress,
-      password: nuPassword,
-    };
-    const form_data = new FormData();
-    for (const key in data) {
-      form_data.append(key, data[key]);
-    }
-    console.log('sending through socket');
-    await window['socket'].emit('grant_signer');
-    const response = await fetch('http://127.0.0.1:5000/grant', {method: 'POST', body: form_data});
-    const tmap_string = await response.text();
-    const tmap = JSON.parse(tmap_string);
-    console.log(tmap['tmap']);
-    textile.sendTmapToSubscribers(textilePubKey, contractAddress, tmap['tmap']);
+    async function grant(subscriber) {
+      let subStruct = await creatorContract.subscribers(subscriber);
+      let pubkeys_sig = JSON.stringify([subStruct[0]]);
+      let pubkeys_enc = JSON.stringify([subStruct[1]]);
+      const data = {
+        subscriber_pubkeys_sig: pubkeys_sig,
+        subscriber_pubkeys_enc: pubkeys_enc,
+        label: contractAddress,
+        address: creatorAddress,
+        password: nuPassword,
+      };
+      const form_data = new FormData();
+      for (const key in data) {
+        form_data.append(key, data[key]);
+      }
+      console.log('sending through socket');
+      await window['socket'].emit('grant_signer');
+      const response = await fetch('http://127.0.0.1:5000/grant', {method: 'POST', body: form_data});
+      const tmap_string = await response.text();
+      const tmap = JSON.parse(tmap_string);
+      console.log(tmap['tmap']);
+      textile.sendTmapToSubscribers(subStruct[2], contractAddress, tmap['tmap']);
   }
 
   async function loadKeyPairs(){

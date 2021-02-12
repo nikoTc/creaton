@@ -224,7 +224,7 @@ contract Creator is SuperAppBase {
 
         ISuperfluid.Context memory context = _host.decodeCtx(ctx); // should give userData
         address sender = context.msgSender; // subscriber
-        (string memory sigKey, string memory pubKey) = abi.decode(context.userData, (string, string)); // this is reallyy tricky
+        (string memory sigKey, string memory pubKey, string memory) = abi.decode(context.userData, (string, string)); // this is reallyy tricky
         _addSubscriber(sender, sigKey, pubKey);
 
         return _updateCreatorFlows(ctx);
