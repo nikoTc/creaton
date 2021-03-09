@@ -6,6 +6,7 @@ import {
   Link
 } from "react-router-dom";
 import './App.css';
+import './index.css';
 import {ApolloClient, ApolloProvider, InMemoryCache} from '@apollo/client';
 import Home from './Home';
 import WalletConnect from "./WalletConnect";
@@ -49,6 +50,7 @@ function Status() {
 
 const App = () => {
   return (
+    <div className="antialiased bg-blue-600 text-gray-900 dark:bg-black dark:text-gray-50 px-5">
     <Web3ReactProvider getLibrary={getLibrary}>
       <SuperfluidProvider>
         <NuCypherSocketProvider>
@@ -56,7 +58,11 @@ const App = () => {
             <Status/>
             <Router>
               <div>
-                <ul>
+              <div className="flex justify-between">
+              <div className="logo">
+                <img src={process.env.PUBLIC_URL + '/logo.svg'} /> 
+              </div>
+                <ul className="flex items-center justify-between space-x-4 text-white">
                   <li>
                     <Link to="/">Home</Link>
                   </li>
@@ -74,8 +80,7 @@ const App = () => {
                   </li>
 
                 </ul>
-
-                <hr/>
+                </div>
 
                 {/*
             A <Switch> looks through all its children <Route>
@@ -110,6 +115,7 @@ const App = () => {
         </NuCypherSocketProvider>
       </SuperfluidProvider> 
     </Web3ReactProvider>
+    </div>
   );
 }
 
