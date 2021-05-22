@@ -29,5 +29,8 @@
     "goerli:contracts": "dotenv -e .env.goerli -e .env -- npm --prefix contracts run goerli:deploy",
     "// Mumbai : deploy to goerli": "",
     "mumbai:contracts": "dotenv -e .env.mumbai -e .env -- npm --prefix contracts run mumbai:deploy"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.1.0"
   }
 }
