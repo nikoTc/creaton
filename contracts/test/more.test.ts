@@ -1,4 +1,4 @@
-/*import {expect} from './chai-setup';
+import {expect} from './chai-setup';
 import {getUnnamedAccounts} from 'hardhat';
 import {test} from 'creaton-common';
 
@@ -9,4 +9,3 @@ describe('CommonLib', function () {
     expect(n).to.be.gt(0);
   });
 });
-*/
